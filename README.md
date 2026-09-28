@@ -37,6 +37,17 @@ with qFlipper. Built and tested against firmware API 87.x (official firmware).
 
 ## Host bridge setup (PC side)
 
+You need `host/usbradio_bridge.py` on the PC. Any of these works:
+
+- **From the Flipper itself** — the script is bundled inside the app and
+  unpacked to the SD card the first time you run it. Grab
+  `SD Card/apps_assets/usb_radio/usbradio_bridge.py` (and
+  `requirements.txt`) with qFlipper's file browser.
+- **Download**: [usbradio_bridge.py](https://raw.githubusercontent.com/Musicandmyth/USB_radio_Flipper0/main/host/usbradio_bridge.py)
+- **Clone this repo.**
+
+Then install its dependencies:
+
 ```sh
 cd host
 pip install -r requirements.txt

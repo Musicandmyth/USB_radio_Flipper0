@@ -400,9 +400,10 @@ static void draw_wait_host(Canvas* canvas, UsbRadioApp* app) {
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str_aligned(canvas, 127, 10, AlignRight, AlignBottom, "@musicandmyth");
     canvas_draw_line(canvas, 0, 13, 127, 13);
-    canvas_draw_str(canvas, 2, 25, "Connect Flipper USB to a PC");
-    canvas_draw_str(canvas, 2, 36, "with an SDR, then run:");
-    canvas_draw_str(canvas, 2, 47, "python usbradio_bridge.py");
+    canvas_draw_str(canvas, 2, 23, "PC bridge script is on SD:");
+    canvas_draw_str(canvas, 2, 32, "apps_assets/usb_radio/");
+    canvas_draw_str(canvas, 2, 41, "or github.com/Musicandmyth");
+    canvas_draw_str(canvas, 2, 50, "Run: python usbradio_bridge.py");
     canvas_draw_str_aligned(
         canvas,
         64,
