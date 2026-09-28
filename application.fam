@@ -1,0 +1,13 @@
+App(
+    appid="usb_radio",
+    name="USB Radio",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="usb_radio_app",
+    stack_size=4 * 1024,
+    fap_category="Sub-GHz",
+    fap_icon="usb_radio_10px.png",
+    fap_author="ravivm",
+    fap_weburl="https://github.com/ravivm/usb-radio-f0",
+    fap_version="0.1",
+    fap_description="Use a USB SDR (RTL-SDR/HackRF via PC bridge) as a radio module: live spectrum + OOK capture to .sub",
+)
