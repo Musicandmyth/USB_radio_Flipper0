@@ -25,9 +25,33 @@ import struct
 import sys
 import time
 
-import numpy as np
-import serial
-import serial.tools.list_ports
+
+def _pause_before_close():
+    """Keep the console window open when the script was double-clicked."""
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            input("\nPress Enter to close...")
+    except (EOFError, OSError):
+        pass
+
+
+def fatal(msg):
+    print(msg, file=sys.stderr)
+    _pause_before_close()
+    sys.exit(1)
+
+
+try:
+    import numpy as np
+    import serial
+    import serial.tools.list_ports
+except ImportError as e:
+    fatal(
+        f"Missing Python dependency: {e.name}\n"
+        "Install the requirements first:\n"
+        "    pip install -r requirements.txt\n"
+        "(run this in the folder containing usbradio_bridge.py)"
+    )
 
 # ----------------------------------------------------------------------
 # Protocol constants (mirror usb_radio_proto.h)
@@ -425,6 +449,27 @@ class Bridge:
         self.mode = MODE_IDLE
 
 
+def wait_for_flipper(explicit_port):
+    """Block until the Flipper's COM port exists and can be opened."""
+    last_msg = None
+    while True:
+        port = explicit_port or find_flipper_port()
+        if port:
+            try:
+                return Link(port)
+            except serial.SerialException:
+                msg = (
+                    f"[bridge] {port} found but busy — close qFlipper or other "
+                    "terminals using it; retrying..."
+                )
+        else:
+            msg = "[bridge] no Flipper serial port yet — plug the Flipper in; retrying..."
+        if msg != last_msg:
+            print(msg)
+            last_msg = msg
+        time.sleep(2)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Flipper Zero USB Radio host bridge")
     ap.add_argument("--port", help="Flipper COM port (default: autodetect)")
@@ -436,13 +481,6 @@ def main():
     )
     args = ap.parse_args()
 
-    port = args.port or find_flipper_port()
-    if not port:
-        sys.exit(
-            "No Flipper serial port found. Plug the Flipper in, open the USB Radio "
-            "app on it, and/or pass --port COMx explicitly."
-        )
-
     print(f"[bridge] opening SDR ({args.backend})...")
     try:
         if args.backend == "rtlsdr":
@@ -450,23 +488,32 @@ def main():
         else:
             backend = SoapyBackend(args.soapy_args)
     except Exception as e:
-        sys.exit(
+        fatal(
             f"Could not open SDR: {e}\n"
-            "rtlsdr: pip install pyrtlsdr, and make sure librtlsdr + WinUSB driver "
-            "(Zadig) are installed.\n"
-            "soapy: install SoapySDR (e.g. PothosSDR) with Python bindings."
+            "  rtlsdr: plug the dongle in, install the WinUSB driver with Zadig\n"
+            "          (https://zadig.akeo.ie/) and make sure librtlsdr is on PATH.\n"
+            "  soapy:  install SoapySDR (e.g. the PothosSDR bundle) with Python\n"
+            "          bindings and pass --backend soapy."
         )
     print(f"[bridge] SDR ready: {backend.name}")
 
-    print(f"[bridge] opening Flipper on {port}...")
-    link = Link(port)
-    bridge = Bridge(link, backend)
     try:
-        bridge.run()
+        while True:
+            link = wait_for_flipper(args.port)
+            print(f"[bridge] Flipper connected on {link.ser.port}")
+            try:
+                Bridge(link, backend).run()
+            except (serial.SerialException, OSError) as e:
+                print(f"[bridge] Flipper connection lost ({e}); waiting for it...")
+                link.close()
+                time.sleep(1)
     except KeyboardInterrupt:
         print("\n[bridge] bye")
     finally:
-        link.close()
+        try:
+            link.close()
+        except NameError:
+            pass
         backend.close()
 
 
